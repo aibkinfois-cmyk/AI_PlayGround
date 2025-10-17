@@ -10,6 +10,7 @@ FastAPI + SOLAPI를 사용한 긴급 음성 통화 알림 시스템
 - 📊 발신 내역 추적 (SQLite)
 - 🎯 DTMF 입력 처리
 - 🔁 자동 재시도 메커니즘
+- 🌐 **웹 시뮬레이터** - 브라우저에서 실시간 테스트 (NEW!)
 
 ## 시스템 구성
 
@@ -55,8 +56,8 @@ pip install -r requirements.txt
 ```env
 # 기본 설정
 APP_HOST=0.0.0.0
-APP_PORT=8000
-PUBLIC_BASE_URL=http://localhost:8000
+APP_PORT=8001
+PUBLIC_BASE_URL=http://localhost:8001
 
 # 프로바이더 선택 (solapi, twilio, vonage, mock)
 VOICE_PROVIDER=solapi
@@ -81,17 +82,63 @@ VONAGE_API_SECRET=your_api_secret
 VONAGE_FROM_NUMBER=14155550100
 ```
 
+## 🌐 웹 시뮬레이터 (NEW!)
+
+### 빠른 시작
+
+```bash
+# 서버 실행
+uvicorn app.main:app --host 0.0.0.0 --port 8001
+
+# 브라우저 접속
+http://localhost:8001/static/simulator_experience.html
+```
+
+### 주요 기능
+- ✅ 웹 UI에서 담당자 정보 입력
+- ✅ **순차적 에스컬레이션**: 정담당자 → 부담당자 → 정담당자(2차) → 부담당자(2차)
+- ✅ **실시간 로그**: 전화 발신 상태를 실시간으로 표시 (발신중 → 성공/실패)
+- ✅ **자동 종료**: 한 명이라도 전화를 받으면 즉시 종료
+- ✅ 7단계 워크플로우 시각화
+- ✅ 실제 Twilio 전화 발신 (메시지 2번 반복)
+- ✅ 외부 접속 지원 (ngrok)
+
+### 외부 공개 (ngrok)
+
+```bash
+# 터미널 1
+uvicorn app.main:app --host 0.0.0.0 --port 8001
+
+# 터미널 2
+ngrok http 8001
+
+# 출력된 URL로 접속
+https://abc123.ngrok.io/static/simulator_experience.html
+```
+
+### 📚 상세 가이드
+- [SIMULATOR_GUIDE.md](SIMULATOR_GUIDE.md) - 시뮬레이터 전체 가이드
+- [ESCALATION_LOGIC.md](ESCALATION_LOGIC.md) - 순차적 에스컬레이션 로직 설명
+- [NGROK_SETUP_GUIDE.md](NGROK_SETUP_GUIDE.md) - ngrok 설치 및 설정
+
+### 🎯 모드 자동 전환
+시스템은 `PUBLIC_BASE_URL`을 보고 자동으로 모드를 선택합니다:
+- **로컬 모드** (`localhost`): TwiML 직접 전달 → ngrok 불필요
+- **외부 모드** (`ngrok.io`): URL 방식 → 자동 에스컬레이션 가능
+
+---
+
 ## 사용 방법
 
 ### 1. 서버 실행
 ```bash
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
 ### 2. 긴급 알림 발송
 ```bash
 # API 호출
-curl -X POST "http://localhost:8000/webhook/start" \
+curl -X POST "http://localhost:8001/webhook/start" \
   -H "Content-Type: application/json" \
   -d '{
     "incident_summary": "긴급 알림",
